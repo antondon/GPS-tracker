@@ -114,13 +114,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
-    private Location createLocation(double latitude, double longtitude) {
-        Location location = new Location("");
-        location.setLatitude(latitude);
-        location.setLongitude(longtitude);
-        return location;
-    }
-
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
@@ -180,25 +173,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 graphView.clear();
                 break;
         }
-    }
-
-    private void addLocations() {
-        Location location0 = createLocation(50.430293, 30.522567);
-        Location location1 = createLocation(50.430474, 30.523353);
-        Location location2 = createLocation(50.430204, 30.523181);
-        Location location3 = createLocation(50.430267, 30.522728);
-        Location location4 = createLocation(50.430110, 30.522672);
-
-        graphView.setCoordinate((float) (location0.getLatitude() * scaleLatitude),
-                (float) (location0.getLongitude() * scaleLongitude));
-        graphView.setCoordinate((float) (location1.getLatitude() * scaleLatitude),
-                (float) (location1.getLongitude() * scaleLongitude));
-        graphView.setCoordinate((float) (location2.getLatitude() * scaleLatitude),
-                (float) (location2.getLongitude() * scaleLongitude));
-        graphView.setCoordinate((float) (location3.getLatitude() * scaleLatitude),
-                (float) (location3.getLongitude() * scaleLongitude));
-        graphView.setCoordinate((float) (location4.getLatitude() * scaleLatitude),
-                (float) (location4.getLongitude() * scaleLongitude));
     }
 
 
