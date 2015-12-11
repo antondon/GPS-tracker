@@ -4,20 +4,27 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.support.v4.util.Pair;
 import android.util.AttributeSet;
 import android.view.View;
+
+import java.util.ArrayList;
 
 public class GraphView extends View {
     private int width;
     private int height;
 
     private int xCenterSOA, yCenterSOA;
-    private int padding;
+    private int textShiftX, textShiftY, arrowShift, divisionShift, textSize, padding;
+
     private Paint axisSystemPaint;
-    private Paint pointPaint;
-    private int textSize, textShiftX, textShiftY, arrowShift, divisionShift, divisionPadding;
-    //1 meter int pixels
-    private float trackscale;
+    private Paint wayPaint;
+    private int axisSize;
+    private float trackScale;
+    private Pair<Float, Float> previousCoordinate, nextCoordinate;
+
+    private Path way = new Path();
 
     public GraphView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -26,20 +33,14 @@ public class GraphView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        setMeasuredDimension(width, height);
         width = MeasureSpec.getSize(widthMeasureSpec);
         height = MeasureSpec.getSize(heightMeasureSpec);
-        setMeasuredDimension(width, height);
 
         xCenterSOA = width / 2;
         yCenterSOA = height / 2;
-
-        /*
-        xStartSOA = padding;
-        xEndSOA = width - padding;
-        yStartSOA = padding;
-        yEndSOA = height - padding;
-        divisionStep = (width - padding * 2 - arrowShift * 2) / DIVISION_COUNT;
-        */
+        axisSize = width / 2 - arrowShift - divisionShift - padding;
+        trackScale = axisSize / 100f;
 
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
@@ -47,6 +48,8 @@ public class GraphView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         drawAxisSystem(canvas);
+        if (!way.isEmpty())
+            canvas.drawPath(way, wayPaint);
     }
 
 
@@ -54,12 +57,10 @@ public class GraphView extends View {
         padding = getResources().getDimensionPixelSize(R.dimen.axis_padding);
         arrowShift = getResources().getDimensionPixelSize(R.dimen.arrow_shift);
         divisionShift = getResources().getDimensionPixelSize(R.dimen.division_shift);
-        divisionPadding = getResources().getDimensionPixelOffset(R.dimen.division_padding);
         textShiftX = getResources().getDimensionPixelSize(R.dimen.text_shift_x);
         textShiftY = getResources().getDimensionPixelSize(R.dimen.text_shift_y);
         textSize = getResources().getDimensionPixelSize(R.dimen.text_size);
         int lineSize = getResources().getDimensionPixelSize(R.dimen.line_size);
-        trackscale = (width / 2f - arrowShift - divisionShift ) / 100f;
 
         axisSystemPaint = new Paint();
         axisSystemPaint.setColor(Color.BLACK);
@@ -67,10 +68,10 @@ public class GraphView extends View {
         axisSystemPaint.setTextSize(textSize);
         axisSystemPaint.setTextAlign(Paint.Align.CENTER);
 
-        pointPaint = new Paint();
-        pointPaint.setColor(Color.RED);
-        pointPaint.setStrokeWidth(getResources().getDimensionPixelSize(R.dimen.point_size));
-
+        wayPaint = new Paint();
+        wayPaint.setColor(Color.BLUE);
+        wayPaint.setStyle(Paint.Style.STROKE);
+        wayPaint.setStrokeWidth(lineSize);
     }
 
     private void drawAxisSystem(Canvas canvas){
@@ -97,9 +98,9 @@ public class GraphView extends View {
         //Draw divisions
         //East
         int startX, startY, stopX, stopY;
-        startX = xStopAxisX - arrowShift - divisionPadding;
+        startX = xCenterSOA + axisSize;
         startY = yCenterSOA - divisionShift;
-        stopX = xStopAxisX - arrowShift - divisionPadding;
+        stopX = xCenterSOA + axisSize;
         stopY = yCenterSOA + divisionShift;
 
         canvas.drawLine(startX, startY, stopX, stopY, axisSystemPaint);
@@ -107,9 +108,9 @@ public class GraphView extends View {
         canvas.drawText("East", stopX, stopY - textShiftY - textSize, axisSystemPaint);
 
         //West
-        startX = xStartAxisX + arrowShift + divisionPadding;
+        startX = xCenterSOA - axisSize;
         startY = yCenterSOA - divisionShift;
-        stopX = xStartAxisX + arrowShift + divisionPadding;
+        stopX = xCenterSOA - axisSize;
         stopY = yCenterSOA + divisionShift;
 
         canvas.drawLine(startX, startY, stopX, stopY, axisSystemPaint);
@@ -118,9 +119,9 @@ public class GraphView extends View {
 
         //North
         startX = xCenterSOA - divisionShift;
-        startY = yStopAxisY + arrowShift + divisionPadding;
+        startY = yCenterSOA - axisSize;
         stopX = xCenterSOA + divisionShift;
-        stopY = yStopAxisY + arrowShift + divisionPadding;
+        stopY = yCenterSOA - axisSize;
 
         canvas.drawLine(startX, startY, stopX, stopY, axisSystemPaint);
         canvas.drawText("+100m", stopX + textShiftX + textSize, stopY + textSize / 2, axisSystemPaint);
@@ -128,15 +129,45 @@ public class GraphView extends View {
 
         //South
         startX = xCenterSOA - divisionShift;
-        startY = yStartAxisY - arrowShift - divisionPadding;
+        startY = yCenterSOA + axisSize;
         stopX = xCenterSOA + divisionShift;
-        stopY = yStartAxisY - arrowShift - divisionPadding;
+        stopY = yCenterSOA + axisSize;
 
         canvas.drawLine(startX, startY, stopX, stopY, axisSystemPaint);
         canvas.drawText("-100m", stopX + textShiftX + textSize, stopY + textSize / 2, axisSystemPaint);
         canvas.drawText("South", stopX + textShiftX + textSize, stopY + textSize * 2, axisSystemPaint);
 
 
+    }
+
+    public void setCoordinate(double latitude, double longitude) {
+        if (previousCoordinate == null){
+            previousCoordinate = Pair.create((float)latitude, (float)longitude);
+            way.moveTo(xCenterSOA, yCenterSOA);
+            return;
+        }
+        this.nextCoordinate = Pair.create((float)latitude, (float)longitude);
+        drawWay();
+    }
+
+    private void drawWay(){
+
+        if (previousCoordinate == null || nextCoordinate == null){
+            return;
+        }
+        float offsetX = (nextCoordinate.second - previousCoordinate.second) * trackScale;
+        float offsetY = -1f * (nextCoordinate.first - previousCoordinate.first) * trackScale;
+        nextCoordinate = null;
+
+        way.lineTo(xCenterSOA + offsetX, yCenterSOA + offsetY);
+        invalidate();
+    }
+
+    public void clear(){
+        previousCoordinate = null;
+        nextCoordinate = null;
+        way = new Path();
+        invalidate();
     }
 }
 
