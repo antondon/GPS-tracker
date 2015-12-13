@@ -18,7 +18,6 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
-
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, LocationListener, View.OnClickListener {
 
@@ -34,6 +33,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private Location previousLocation = null;
     private GraphView graphView;
     private Button btnStartStop;
+
+    private float[] distanceBetweenResults = new float[1];
 
     // Request code to use when launching the resolution activity
     private static final int REQUEST_RESOLVE_ERROR = 1001;
@@ -93,7 +94,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     @Override
     public void onConnectionSuspended(int i) {
-
+        //empty
     }
 
     @Override
@@ -102,11 +103,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             previousLocation = location;
             return;
         }
-        float[] results = new float[3];
         Location.distanceBetween(previousLocation.getLatitude(), previousLocation.getLongitude(),
-                location.getLatitude(), location.getLongitude(), results);
-        float distance = results[0];
-        if (distance > POSITION_OFFSET && location.getAccuracy() < MAX_ACCURACY) {
+                location.getLatitude(), location.getLongitude(), distanceBetweenResults);
+        float distance = distanceBetweenResults[0];
+        if (distance > POSITION_OFFSET && location.getAccuracy() <= MAX_ACCURACY) {
             graphView.setCoordinate(location.getLatitude() * scaleLatitude, location.getLongitude() * scaleLongitude);
             previousLocation = location;
         } else if (location.getAccuracy() > MAX_ACCURACY) {
@@ -136,7 +136,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
 
-    /* Creates a dialog for an error message */
+    /**
+     *  Creates a dialog for an error message
+     */
     private void showErrorDialog(int errorCode) {
         // Create a fragment for the error dialog
         ErrorDialogFragment dialogFragment = new ErrorDialogFragment();
@@ -147,7 +149,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         dialogFragment.show(getSupportFragmentManager(), "errordialog");
     }
 
-    /* Called from ErrorDialogFragment when the dialog is dismissed. */
+    /**
+     * Called from ErrorDialogFragment when the dialog is dismissed.
+     */
     public void onDialogDismissed() {
         mResolvingError = false;
     }
@@ -157,14 +161,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         switch (v.getId()) {
             case R.id.btnStartStop:
                 //start tracking
-                if (!requestingLocationUpdate) {
-                    requestingLocationUpdate = true;
+                requestingLocationUpdate = !requestingLocationUpdate;
+                if (requestingLocationUpdate) {
                     startLocationUpdates();
                     btnStartStop.setText(getString(R.string.stop_tracking));
                 }
                 //stop tracking
                 else {
-                    requestingLocationUpdate = false;
                     stopLocationUpdates();
                     btnStartStop.setText(getString(R.string.start_tracking));
                 }
@@ -176,7 +179,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
 
-    /* A fragment to display an error dialog */
+    /**
+     *  A fragment to display an error dialog
+     */
     public static class ErrorDialogFragment extends DialogFragment {
         public ErrorDialogFragment() {
         }

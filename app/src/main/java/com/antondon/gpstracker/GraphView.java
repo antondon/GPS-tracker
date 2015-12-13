@@ -9,17 +9,13 @@ import android.support.v4.util.Pair;
 import android.util.AttributeSet;
 import android.view.View;
 
-import java.util.ArrayList;
-
 public class GraphView extends View {
-    private int width;
-    private int height;
+    private int width, height;
 
     private int xCenterSOA, yCenterSOA;
     private int textShiftX, textShiftY, arrowShift, divisionShift, textSize, padding;
 
-    private Paint axisSystemPaint;
-    private Paint wayPaint;
+    private Paint axisSystemPaint, wayPaint;
     private int axisSize;
     private float trackScale;
     private Pair<Float, Float> previousCoordinate, nextCoordinate;
@@ -48,12 +44,12 @@ public class GraphView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         drawAxisSystem(canvas);
-        if (!way.isEmpty())
+        if (!way.isEmpty()) {
             canvas.drawPath(way, wayPaint);
+        }
     }
 
-
-    private void initVariables(){
+    private void initVariables() {
         padding = getResources().getDimensionPixelSize(R.dimen.axis_padding);
         arrowShift = getResources().getDimensionPixelSize(R.dimen.arrow_shift);
         divisionShift = getResources().getDimensionPixelSize(R.dimen.division_shift);
@@ -74,7 +70,7 @@ public class GraphView extends View {
         wayPaint.setStrokeWidth(lineSize);
     }
 
-    private void drawAxisSystem(Canvas canvas){
+    private void drawAxisSystem(Canvas canvas) {
         //Draw coordinate axis
         int xStartAxisX = padding;
         int yStartAxisX = height / 2;
@@ -136,34 +132,27 @@ public class GraphView extends View {
         canvas.drawLine(startX, startY, stopX, stopY, axisSystemPaint);
         canvas.drawText("-100m", stopX + textShiftX + textSize, stopY + textSize / 2, axisSystemPaint);
         canvas.drawText("South", stopX + textShiftX + textSize, stopY + textSize * 2, axisSystemPaint);
-
-
     }
 
     public void setCoordinate(double latitude, double longitude) {
-        if (previousCoordinate == null){
-            previousCoordinate = Pair.create((float)latitude, (float)longitude);
+        if (previousCoordinate == null) {
+            previousCoordinate = Pair.create((float) latitude, (float) longitude);
             way.moveTo(xCenterSOA, yCenterSOA);
             return;
         }
-        this.nextCoordinate = Pair.create((float)latitude, (float)longitude);
+        this.nextCoordinate = Pair.create((float) latitude, (float) longitude);
         drawWay();
     }
 
-    private void drawWay(){
-
-        if (previousCoordinate == null || nextCoordinate == null){
-            return;
-        }
+    private void drawWay() {
         float offsetX = (nextCoordinate.second - previousCoordinate.second) * trackScale;
         float offsetY = -1f * (nextCoordinate.first - previousCoordinate.first) * trackScale;
-        nextCoordinate = null;
 
         way.lineTo(xCenterSOA + offsetX, yCenterSOA + offsetY);
         invalidate();
     }
 
-    public void clear(){
+    public void clear() {
         previousCoordinate = null;
         nextCoordinate = null;
         way = new Path();
